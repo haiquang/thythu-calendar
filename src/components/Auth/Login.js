@@ -40,13 +40,14 @@ const Login = () => {
         tempusers.push({ id, ...data[id] });
       }
       setUsers(tempusers);
+      localStorage.setItem('users', JSON.stringify(tempusers));
       return () => unsubscribe();
     })
   }, [])
 
   const handleContinue = async () => {
     if (!selectedUser) {
-      setError('Please select a user');
+      setError('Làm ơn hãy chọn một người dùng');
       return;
     }
 
@@ -87,7 +88,7 @@ const Login = () => {
       <Card sx={{ width: '100%', maxWidth: 500, boxShadow: 3 }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h4" component="h2" gutterBottom align="center">
-            Login
+            Đăng nhập
           </Typography>
           
           {error && (
@@ -116,7 +117,7 @@ const Login = () => {
             renderInput={(params) => (
               <TextField 
                 {...params} 
-                label="Search and Select User" 
+                label="Tìm và chọn người dùng" 
                 margin="normal"
                 placeholder="Type to search users"
               />
@@ -134,7 +135,7 @@ const Login = () => {
               disabled={loading}
               size="large"
             >
-              Continue
+              Tiếp tục
             </Button>
           </Box>
         </CardContent>
@@ -145,13 +146,13 @@ const Login = () => {
             onClick={() => setOpenAdminDialog(true)}
             size="small"
           >
-            you are admin?
+            Bạn là Admin?
           </Button>
         </Box>
       </Card>
 
       <Dialog open={openAdminDialog} onClose={() => setOpenAdminDialog(false)}>
-        <DialogTitle>Admin Login</DialogTitle>
+        <DialogTitle>Đăng nhập Admin</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus

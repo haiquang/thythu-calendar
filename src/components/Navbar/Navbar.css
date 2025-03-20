@@ -5,6 +5,13 @@
   background-color: #333;
   padding: 15px 20px;
   color: white;
+
+  .navbar-info {
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+    padding-left: 10px;
+  }
 }
 
 .navbar-brand a {
