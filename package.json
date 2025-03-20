@@ -2,7 +2,7 @@
   "name": "thythu-calendar",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://github.com/haiquang/thythu-calendar",
+  "homepage": "https://haiquang.github.io/thythu-calendar/",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
