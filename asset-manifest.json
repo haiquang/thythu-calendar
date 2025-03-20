@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/haiquang/thythu-calendar/static/css/main.3f5a10e0.css",
-    "main.js": "/haiquang/thythu-calendar/static/js/main.365a4ee7.js",
+    "main.js": "/haiquang/thythu-calendar/static/js/main.cb049459.js",
     "index.html": "/haiquang/thythu-calendar/index.html",
     "main.3f5a10e0.css.map": "/haiquang/thythu-calendar/static/css/main.3f5a10e0.css.map",
-    "main.365a4ee7.js.map": "/haiquang/thythu-calendar/static/js/main.365a4ee7.js.map"
+    "main.cb049459.js.map": "/haiquang/thythu-calendar/static/js/main.cb049459.js.map"
   },
   "entrypoints": [
     "static/css/main.3f5a10e0.css",
-    "static/js/main.365a4ee7.js"
+    "static/js/main.cb049459.js"
   ]
 }
