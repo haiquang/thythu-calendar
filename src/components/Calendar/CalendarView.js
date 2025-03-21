@@ -317,7 +317,7 @@ const CalendarView = () => {
   return (
     <>
       <Navbar />
-      <Box sx={{ height: "calc(100vh - 64px)", padding: 2 }}>
+      <Box sx={{ height: "calc(100vh - 130px)", padding: 2 }}>
         <Paper elevation={3} sx={{ height: "100%", p: 2 }}>
           {loading ? (
             <Box
