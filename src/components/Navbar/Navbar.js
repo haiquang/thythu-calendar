@@ -69,27 +69,27 @@ const Navbar = () => {
             <Typography variant="body2" gutterBottom>
               <strong>Màu sắc sự kiện:</strong>
             </Typography>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+            <Typography component="div" variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
               <Box sx={{ width: 16, height: 16, borderRadius: 1, bgcolor: '#3174ad', mr: 1 }} /> 
               Nghỉ phép / Nghỉ phiên
             </Typography>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+            <Typography component="div" variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
               <Box sx={{ width: 16, height: 16, borderRadius: 1, bgcolor: '#32a852', mr: 1 }} /> 
               Ra trực
             </Typography>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+            <Typography component="div" variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
               <Box sx={{ width: 16, height: 16, borderRadius: 1, bgcolor: '#a83232', mr: 1 }} /> 
               Trực đêm
             </Typography>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+            <Typography component="div" variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
               <Box sx={{ width: 16, height: 16, borderRadius: 1, bgcolor: '#a16e1e', mr: 1 }} /> 
               Trực 24
             </Typography>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <Typography component="div" variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <Box sx={{ width: 16, height: 16, borderRadius: 1, bgcolor: '#a83271', mr: 1 }} /> 
               Làm hành chính, không trực
             </Typography>
-            <Typography variant="body2">
+            <Typography component="div" variant="body2">
               <strong>Hướng dẫn:</strong> Click vào ngày để tạo sự kiện mới. Chỉ quản trị viên có thể xóa sự kiện.
             </Typography>
           </Box>

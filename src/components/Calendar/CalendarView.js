@@ -22,8 +22,10 @@ import {
 } from "@mui/material";
 import Navbar from "../Navbar/Navbar";
 import { database } from "../../firebase/config";
-import { ref, push, set, onValue, remove } from "firebase/database";
+import { ref, push, set, onValue, remove, get, update } from "firebase/database";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from '../../context/ToastContext';
+import DayEventsPopover from "./DayEventsPopover";
 
 // Set moment to use Vietnamese locale
 moment.locale("vi");
@@ -34,14 +36,32 @@ const CalendarView = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [eventReason, setEventReason] = useState({});
-  const [username, setUsername] = useState("");
   const [isAdmin, setIsAdmin] = useState(false); // To be set based on authentication
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
   const [event, setEvent] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [dayEvents, setDayEvents] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const { success, error, warning, info } = useToast();
 
-  const users = JSON.parse(localStorage.getItem("users") || []);
+  const getMonthYearKey = (date = currentDate) => {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}${year}`;
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      currentUser.getIdTokenResult(true).then(idTokenResult => {
+        setIsAdmin(idTokenResult?.claims?.admin ?? false);
+      })
+    } else {
+      setIsAdmin(false);
+    }
+  }, []);
 
   const reasonOptions = [
     {
@@ -68,17 +88,8 @@ const CalendarView = () => {
 
   // Load events from Firebase
   useEffect(() => {
-    const eventsRef = ref(database, "events");
-
-    // Get username from localStorage
-    const storedUsername = localStorage.getItem("calendar_username");
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-
-    // Check if user is admin (in a real app, this would come from auth context)
-    // For demo, we'll check if the username contains "admin" or "teacher"
-    setIsAdmin(!!currentUser);
+    const currentKey = getMonthYearKey(currentDate);
+    const eventsRef = ref(database, `events/${currentKey}`);
 
     // Fetch events from Firebase
     const unsubscribe = onValue(
@@ -106,10 +117,28 @@ const CalendarView = () => {
 
     // Cleanup subscription
     return () => unsubscribe();
-  }, []);
+  }, [currentDate]);
+
+
+  useEffect(() => {
+    const userRef = ref(database, 'users');
+    const tempusers = [];
+    const unsubscribe = onValue(userRef, (snapshot) => {
+      const data = snapshot.val();
+      for (let id in data) {
+        tempusers.push({ id, ...data[id] });
+      }
+      setUsers(tempusers);
+      return () => unsubscribe();
+    })
+  }, [])
+
+  const handleNavigate = (newDate) => {
+    setCurrentDate(newDate);
+  };
 
   const handleSelectSlot = (slotInfo) => {
-    if (!username && !currentUser) {
+    if (!currentUser) {
       alert("Vui lòng đăng nhập để tạo sự kiện");
       return;
     }
@@ -125,28 +154,68 @@ const CalendarView = () => {
     setOpenDialog(false);
     setEventReason(null);
     setEvent(null);
+    setSelectedUser(null);
   };
 
-  const handleCreateEvent = () => {
+  const getUserName = () => {
+    if (isAdmin) {
+      return selectedUser?.name || '';
+    } else {
+      return users.find((user) => user.email === currentUser.email)?.name || '';
+    }
+  }
+
+  const handleCreateEvent = async () => {
     if (!eventReason) {
       alert("Vui lòng chọn lý do cho sự kiện của bạn");
       return;
     }
 
+    const eventDate = event ? new Date(event.start) : selectedSlot.start;
+    const monthYearKey = getMonthYearKey(eventDate);
+    const eventsRef = ref(database, `events/${monthYearKey}`);
+    
+    if (event) {
+  
+      const snapshot = await get(eventsRef);
+      if (event && snapshot.exists()) {
+        const data = snapshot.val();
+        const eventKeyExists = Object.keys(data).find(evKey => evKey === event.id);
+        const eventExist = data[eventKeyExists];
+        if (eventExist) {
+          const updatedEvent = {
+            ...eventExist, 
+            desc: eventReason?.value || event.desc, 
+            backgroundColor: reasonOptions.find(
+            (reason) => !!eventReason.value ? reason.value === eventReason?.value : reason.value === event.desc
+          )?.color};
+          const eventRef = ref(database, `events/${event.id}`);
+          try {
+            await update(eventRef, updatedEvent);
+            console.log("Event updated successfully");
+            handleCloseDialog();
+            return;
+          } catch (err) {
+            console.error("Error updating event:", err);
+            alert("Có lỗi khi cập nhật sự kiện: " + err.message);
+          }
+        }
+      }
+    }
+
     const newEvent = {
-      title: username || selectedUser?.name || '',
+      title: getUserName(),
       start: selectedSlot.start.toISOString(),
       end: selectedSlot.end.toISOString(),
       desc: eventReason.value,
       backgroundColor: reasonOptions.find(
         (reason) => reason.value === eventReason.value
       )?.color,
-      creator: username,
+      creator: currentUser.email,
       createdAt: new Date().toISOString(),
     };
 
     // Save to Firebase
-    const eventsRef = ref(database, "events");
     const newEventRef = push(eventsRef);
     set(newEventRef, newEvent)
       .then(() => {
@@ -161,10 +230,14 @@ const CalendarView = () => {
   };
 
   const handleSelectEvent = (event) => {
-    // Only admin can edit/delete events
     if (!isAdmin) {
-      alert("Chỉ quản trị viên mới có thể chỉnh sửa hoặc xóa sự kiện.");
-      return;
+      if (event.creator === currentUser.email) {
+        setEvent(event);
+        setOpenDialog(true);
+      } else {
+        error("Chỉ quản trị viên hoặc người tạo mới có thể chỉnh sửa hoặc xóa sự kiện này.");
+        return;
+      }
     } else {
       setEvent(event);
       setOpenDialog(true);
@@ -173,11 +246,14 @@ const CalendarView = () => {
 
   const deletedEvent = () => {
     if (window.confirm("Bạn có muốn xóa sự kiện này không?")) {
-      const eventRef = ref(database, `events/${event.id}`);
+      const eventDate = new Date(event.start);
+      const monthYearKey = getMonthYearKey(eventDate);
+      const eventRef = ref(database, `events/${monthYearKey}/${event.id}`);
       remove(eventRef)
         .then(() => {
           console.log("Event deleted successfully");
           setOpenDialog(false);
+          handleCloseDialog();
         })
         .catch((error) => {
           console.error("Error deleting event:", error);
@@ -203,6 +279,22 @@ const CalendarView = () => {
 
   const timing = (start, end) => {
     return `${moment(start).format("HH:mm")} - ${moment(end).format("HH:mm")}`;
+  };
+
+  
+  const handleShowMore = (events, date) => {
+    setDayEvents(events);
+    setSelectedDate(date);
+  };
+
+  const handleCloseShowMore = () => {
+    setDayEvents(null);
+    setSelectedDate(null);
+  };
+
+  const handleSelectFromPopover = (eventData) => {
+    handleSelectEvent(eventData);
+    handleCloseShowMore();
   };
 
   // Vietnamese messages for the calendar
@@ -253,6 +345,8 @@ const CalendarView = () => {
               views={["month"]}
               defaultView="month"
               messages={vietnameseMessages}
+              onShowMore={handleShowMore}
+              onNavigate={handleNavigate}
             />
           )}
 
@@ -306,7 +400,7 @@ const CalendarView = () => {
                   <TextField
                     label="Người Dùng"
                     fullWidth
-                    value={event?.title ? event.title : username}
+                    value={event?.title ? event.title : getUserName()}
                     disabled
                     margin="normal"
                   />
@@ -316,12 +410,11 @@ const CalendarView = () => {
               <FormControl
                 fullWidth
                 margin="normal"
-                disabled={isAdmin && !!event}
               >
                 <InputLabel id="reason-select-label">Lý do</InputLabel>
                 <Select
                   labelId="reason-select-label"
-                  value={event?.desc ? event.desc : (eventReason?.value || '')}
+                  value={eventReason?.value ? eventReason?.value : (event?.desc ? event.desc : (eventReason?.value || ''))}
                   label="Lý do"
                   onChange={(e) => {
                     const exist = reasonOptions.find(
@@ -359,7 +452,7 @@ const CalendarView = () => {
             </DialogContent>
             <DialogActions>
               <Button onClick={handleCloseDialog}>Hủy</Button>
-              {isAdmin && event ? (
+              {!!event && (
                 <Button
                   onClick={deletedEvent}
                   variant="contained"
@@ -367,18 +460,35 @@ const CalendarView = () => {
                 >
                   Xóa
                 </Button>
-              ) : (
+              )} 
                 <Button
                   onClick={handleCreateEvent}
                   variant="contained"
                   color="primary"
-                  disabled={!eventReason}
+                  disabled={!eventReason && !event?.desc}
                 >
                   Xác nhận
                 </Button>
-              )}
             </DialogActions>
           </Dialog>
+
+                    {/* Day Events Popover */}
+          <DayEventsPopover
+            open={Boolean(selectedDate)}
+            anchorEl={Document.body}
+            anchorOrigin={{
+              vertical: "center",
+              horizontal: "center",
+            }}
+            transformOrigin={{
+              vertical: "center",
+              horizontal: "center",
+            }}
+            events={dayEvents}
+            onClose={handleCloseShowMore}
+            onEventClick={handleSelectFromPopover}
+            date={selectedDate}
+          />
         </Paper>
       </Box>
     </>

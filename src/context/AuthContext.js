@@ -20,8 +20,16 @@ export function AuthProvider({ children }) {
     return signInWithEmailAndPassword(auth, email, password);
   }
 
-  function logout() {
-    return signOut(auth);
+  async function logout () {
+    if (auth.currentUser) {
+      try {
+        await signOut(auth);
+        console.log('Đăng xuất thành công!');
+      } catch (error) {
+        console.error('Lỗi khi đăng xuất:', error.message);
+        throw error; // Nếu muốn xử lý lỗi ở component
+      }
+    }
   }
 
   useEffect(() => {
